@@ -114,6 +114,29 @@ InitGraphics (
   // Hint: Use GetMode/SetMode functions.
   //
 
+  // EFI_GRAPHICS_OUTPUT_PROTOCOL.QueryMode()) returns information for an available graphics mode
+  // that the graphics device and the set of active video output devices supports.
+
+  // EFI_GRAPHICS_OUTPUT_PROTOCOL.SetMode() set the video device into the specified mode and clears
+  // the visible portions of the output display to black.
+
+  UINTN                                Index;
+  UINTN                                SizeOfInfo;
+  EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *Info;
+  for (Index = 0; Index < GraphicsOutput->Mode->MaxMode; Index++) {
+    GraphicsOutput->QueryMode (
+      GraphicsOutput,
+      Index,
+      &SizeOfInfo,
+      &Info
+      );
+    DEBUG ((DEBUG_INFO, "%u %u %u\n", Index, Info->HorizontalResolution, Info->VerticalResolution));
+  }
+  
+  GraphicsOutput->SetMode (
+    GraphicsOutput,
+    12
+    );
 
   //
   // Fill screen with black.
@@ -977,7 +1000,7 @@ UefiMain (
   UINTN              EntryPoint;
   VOID               *GateData;
 
-#if 1 ///< Uncomment to await debugging
+#if 0 ///< Uncomment to await debugging
   volatile BOOLEAN   Connected;
   DEBUG ((DEBUG_INFO, "JOS: Awaiting debugger connection\n"));
 
