@@ -37,7 +37,7 @@ test_rec(void) {
 void
 umain(int argc, char **argv) {
     rand_init(5);
-    for (;;) {
+    for (int i = 0; i<1; ++i) {
         test_rec();
     }
 }

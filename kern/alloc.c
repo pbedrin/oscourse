@@ -29,22 +29,36 @@ test_alloc(uint8_t nbytes) {
 
     /* Make allocator thread-safe with the help of spin_lock/spin_unlock. */
     // LAB 5: Your code here
+    lock_kernel();
+    // почему тут lock kernel
+    // минимальный размер критической секции, которую надо защищать (насколько можно близко поставить lock и unlock)
+
+    // jos развивается, добавили многоядерность
+    // большое время работы программы тратится на ожидание разблокировки
+    // си - запись и чтение в одну и ту же переменную параллельно запрещена.
 
     size_t nunits = (nbytes + sizeof(Header) - 1) / sizeof(Header) + 1;
 
     /* no free list yet */
     if (!freep) {
         Header *hd = (Header *)&space;
-
+        
         hd->next = (Header *)&base;
         hd->prev = (Header *)&base;
         hd->size = (SPACE_SIZE - sizeof(Header)) / sizeof(Header);
-
+        
         freep = &base;
     }
+    // ограничиться рассмотрением функции test_alloc при ответе на вопрос
+    // что будет если поставить lock_kernel сюда, перед check_list()
 
+    // состояния работы acpi s3 s4 s5. как они устроены, основные вектора атаки на s3 (спящий), s4 (гибернация) режимы
+    // преимущества s4i
+    // продемрнстрировать из монитора корректность работы таймеров (проверить с помощью телефона)
+    // процедура вычисления tsc - будут смотреть код, что такое tsc частота
+    
     check_list();
-
+    
     for (Header *p = freep->next;; p = p->next) {
         /* big enough */
         if (p->size >= nunits) {
@@ -58,11 +72,13 @@ test_alloc(uint8_t nbytes) {
                 p += p->size;
                 p->size = nunits;
             }
+            unlock_kernel();
             return (void *)(p + 1);
         }
 
         /* wrapped around free list */
         if (p == freep) {
+            unlock_kernel();
             return NULL;
         }
     }
@@ -77,6 +93,7 @@ test_free(void *ap) {
 
     /* Make allocator thread-safe with the help of spin_lock/spin_unlock. */
     // LAB 5: Your code here
+    lock_kernel();
 
     /* freed block at start or end of arena */
     Header *p = freep;
@@ -105,4 +122,5 @@ test_free(void *ap) {
 
     check_list();
 
+    unlock_kernel();
 }
