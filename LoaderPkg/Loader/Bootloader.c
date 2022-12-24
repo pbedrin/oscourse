@@ -113,29 +113,40 @@ InitGraphics (
   //
   // Hint: Use GetMode/SetMode functions.
   //
+  UINTN                                ModeIdx;
+  UINTN                                TargetModeIdx;
+  UINT32                               MaxHorizontalResolution;
+  UINT32                               MaxverticalResolution;
+  EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE    *Mode;
+  EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *ModeInfo;
+  MaxHorizontalResolution = 0;
+  Mode = GraphicsOutput->Mode;
 
-  // EFI_GRAPHICS_OUTPUT_PROTOCOL.QueryMode()) returns information for an available graphics mode
-  // that the graphics device and the set of active video output devices supports.
-
-  // EFI_GRAPHICS_OUTPUT_PROTOCOL.SetMode() set the video device into the specified mode and clears
-  // the visible portions of the output display to black.
-
-  UINTN                                Index;
-  UINTN                                SizeOfInfo;
-  EFI_GRAPHICS_OUTPUT_MODE_INFORMATION *Info;
-  for (Index = 0; Index < GraphicsOutput->Mode->MaxMode; Index++) {
+  for (ModeIdx = 0; ModeIdx < Mode->MaxMode; ModeIdx++) {
     GraphicsOutput->QueryMode (
       GraphicsOutput,
-      Index,
-      &SizeOfInfo,
-      &Info
+      ModeIdx,
+      &(Mode->SizeOfInfo),
+      &ModeInfo
       );
-    DEBUG ((DEBUG_INFO, "%u %u %u\n", Index, Info->HorizontalResolution, Info->VerticalResolution));
+    if (EFI_ERROR (Status)) {
+      DEBUG ((DEBUG_ERROR, "JOS: Cannot query GraphicsOutput mode - %r\n", Status));
+      return Status;
+    }
+
+    // Select Maximum available horizontal resolution below 1024
+    if (ModeInfo->HorizontalResolution <= 1024 && 
+        MaxHorizontalResolution        <= ModeInfo->HorizontalResolution &&
+        MaxverticalResolution          <= ModeInfo->VerticalResolution) {
+      TargetModeIdx           = ModeIdx;
+      MaxHorizontalResolution = ModeInfo->HorizontalResolution;
+      MaxverticalResolution   = ModeInfo->VerticalResolution;
+    }
   }
-  
-  GraphicsOutput->SetMode (
+
+  GraphicsOutput->SetMode(
     GraphicsOutput,
-    12
+    TargetModeIdx
     );
 
   //

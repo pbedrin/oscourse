@@ -93,7 +93,11 @@ acpi_find_table(const char *sign) {
     static RSDT *rsdt = 0;
 
     if (!rsdt) {
-        RSDP *rsdp = mmio_map_region(uefi_lp->ACPIRoot, sizeof(*rsdp));
+        if (!uefi_lp->ACPIRoot)
+            panic("No rsdp\n");
+
+        physaddr_t acpi_phys = uefi_lp->ACPIRoot;
+        RSDP *rsdp = mmio_map_region((physaddr_t)acpi_phys, sizeof(*rsdp));
 
         if (strncmp(rsdp->Signature, "RSD PTR ", 8))
             panic("RSDP malformed");
@@ -132,7 +136,9 @@ acpi_find_table(const char *sign) {
         }
 
         rsdt = mmio_map_region(rsdt_phys, sizeof(RSDT));
-        rsdt = (RSDT *)mmio_remap_last_region(rsdt_phys, (void *)rsdt, sizeof(RSDT), rsdt->h.Length);
+
+        /* Remap using actual size */
+        rsdt = mmio_map_region(rsdt_phys, rsdt->h.Length);
 
         /* Validate header checksum */
         uint8_t checksum = 0;
