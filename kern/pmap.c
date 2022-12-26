@@ -1881,6 +1881,8 @@ init_memory(void) {
 
 #ifdef SANITIZE_SHADOW_BASE
     unpoison_meta(&root);
+    platform_asan_unpoison((void*)(KERN_PF_STACK_TOP - KERN_PF_STACK_SIZE), (size_t) KERN_PF_STACK_SIZE);
+    platform_asan_unpoison((void*)(KERN_STACK_TOP - KERN_STACK_SIZE), (size_t) KERN_STACK_SIZE);
 #endif
 
     /* Traps needs to be initiallized here

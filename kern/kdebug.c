@@ -126,7 +126,6 @@ debuginfo_rip(uintptr_t addr, struct Ripdebuginfo *info) {
     * Hint: use line_for_address from kern/dwarf_lines.c */
 
     // LAB 2: Your res here:
-
     res = line_for_address(&addrs, addr - 5, line_offset, &info->rip_line);
     
     if (res < 0) goto error;
@@ -146,7 +145,7 @@ debuginfo_rip(uintptr_t addr, struct Ripdebuginfo *info) {
 
     strncpy(info->rip_fn_name, tmp_buf, sizeof(info->rip_fn_name));
     info->rip_fn_namelen = strnlen(info->rip_fn_name, sizeof(info->rip_fn_name));
-
+    
 error:
     return res;
 }

@@ -431,9 +431,8 @@ env_destroy(struct Env *env) {
      * ENV_DYING. A zombie environment will be freed the next time
      * it traps to the kernel. */
     env->env_status = ENV_DYING;
-
+    env_free(env);
     if (env == curenv) {
-        env_free(env);
         sched_yield();
     }
     // LAB 3: Your code here

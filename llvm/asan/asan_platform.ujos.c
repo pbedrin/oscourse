@@ -65,7 +65,10 @@ platform_abort() {
 static bool
 asan_shadow_allocator(struct UTrapframe *utf) {
     // LAB 9: Your code here
-    return 0;
+    if (!SHADOW_ADDRESS_VALID(utf->utf_fault_va))
+        return 0;
+    sys_alloc_region(0, ROUNDDOWN((void *)utf->utf_fault_va, PAGE_SIZE), PAGE_SIZE, ALLOC_ONE | PROT_R | PROT_W);
+    return 1;
 }
 #endif
 
@@ -82,6 +85,7 @@ static int
 asan_unpoison_shared_region(void *start, void *end, void *arg) {
     (void)start, (void)end, (void)arg;
     // LAB 8: Your code here
+    platform_asan_unpoison(start, end - start);
     return 0;
 }
 
@@ -123,6 +127,7 @@ platform_asan_init() {
     /* 4. Shared pages
      * HINT: Use foreach_shared_region() with asan_unpoison_shared_region() */
     // LAB 8: Your code here
+    foreach_shared_region(asan_unpoison_shared_region, 0);
 }
 
 
