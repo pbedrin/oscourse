@@ -387,13 +387,15 @@ env_create(uint8_t *binary, size_t size, enum EnvType type) {
     int status = env_alloc(&env, 0, type);
     if (status < 0)
         panic("Error. Can't allocate new environment : %i", status);
+    
     // LAB 10: Your code here
-
     status = load_icode(env, binary, size);
     if (status < 0)
         panic("Error. Could not load executable : %i", status);
     env->binary = binary;
     env->env_type = type;
+    if (type == ENV_TYPE_FS)
+        env->env_tf.tf_rflags |= FL_IOPL_3;
 }
 
 
