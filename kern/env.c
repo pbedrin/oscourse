@@ -387,6 +387,7 @@ env_create(uint8_t *binary, size_t size, enum EnvType type) {
     int status = env_alloc(&env, 0, type);
     if (status < 0)
         panic("Error. Can't allocate new environment : %i", status);
+    // LAB 10: Your code here
 
     status = load_icode(env, binary, size);
     if (status < 0)
