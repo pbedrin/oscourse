@@ -3,6 +3,7 @@
 #include <inc/x86.h>
 #include <kern/kclock.h>
 #include <kern/timer.h>
+#include <inc/time.h>
 #include <kern/trap.h>
 #include <kern/picirq.h>
 
@@ -106,10 +107,15 @@ get_time(void) {
 int
 gettime(void) {
     // LAB 12: your code here
-    int res = 0;
+    while (cmos_read8(RTC_AREG) & RTC_UPDATE_IN_PROGRESS);
 
+    int t0 = get_time();
+    int t1 = get_time();
 
-    return res;
+    if (t0 != t1)
+        t0 = get_time();
+
+    return t0;
 }
 
 void

@@ -93,8 +93,6 @@ envid2env(envid_t envid, struct Env **env_store, bool need_check_perm) {
  */
 void
 env_init(void) {
-    // LAB 12: Your code here
-
     /* kzalloc_region only works with current_space != NULL */
 
     /* Allocate envs array with kzalloc_region
@@ -108,12 +106,16 @@ env_init(void) {
     // LAB 8: Your code here
     map_region(current_space, UENVS, &kspace, (uintptr_t)envs, UENVS_SIZE, PROT_R | PROT_USER_);
     /* Set up envs array */
+    // LAB 3: Your code here
     env_free_list = &envs[0];
     for (size_t i = 0; i < NENV - 1; i++) {
         envs[i].env_link = &envs[i + 1];
     }
-    // LAB 3: Your code here
 
+    // LAB 12: Your code here
+    vsys = kzalloc_region(UVSYS_SIZE);
+    memset((void *)vsys, 0, ROUNDUP(UVSYS_SIZE, PAGE_SIZE));
+    map_region(current_space, UVSYS, &kspace, (uintptr_t)vsys, UVSYS_SIZE, PROT_R | PROT_USER_);
 }
 
 /* Allocates and initializes a new environment.
