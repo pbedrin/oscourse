@@ -414,4 +414,6 @@ page_fault_handler(struct Trapframe *tf) {
 
     /* Rerun current environment */
     // LAB 9: Your code here:
+
+    while (1) {}
 }
