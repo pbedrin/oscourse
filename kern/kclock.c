@@ -5,6 +5,7 @@
 #include <kern/timer.h>
 #include <kern/trap.h>
 #include <kern/picirq.h>
+#include <inc/time.h>
 
 /* HINT: Note that selected CMOS
  * register is reset to the first one
