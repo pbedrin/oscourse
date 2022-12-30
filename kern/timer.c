@@ -199,7 +199,7 @@ get_hpet(void) {
 HPETRegister *
 hpet_register(void) {
     HPET *hpet_timer = get_hpet();
-    if (!hpet_timer || !hpet_timer->address.address) panic("hpet is unavailable\n");
+    if (!hpet_timer->address.address) panic("hpet is unavailable\n");
 
     uintptr_t paddr = hpet_timer->address.address;
     return mmio_map_region(paddr, sizeof(HPETRegister));
