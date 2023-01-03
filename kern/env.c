@@ -344,7 +344,8 @@ load_icode(struct Env *env, uint8_t *binary, size_t size) {
             if (image_end < (uintptr_t)(dst + ph->p_memsz))
                 image_end = (uintptr_t)(dst + ph->p_memsz);
         #endif
-
+        map_region(&env->address_space, ROUNDDOWN((uintptr_t) dst, PAGE_SIZE),
+            NULL, 0, ROUNDUP((uintptr_t)ph->p_memsz, PAGE_SIZE), PROT_RWX | PROT_USER_ | ALLOC_ZERO);
         memcpy(dst, src, ph->p_filesz);
         memset(dst + ph->p_filesz, 0, ph->p_memsz - ph->p_filesz);
     }
@@ -357,13 +358,8 @@ load_icode(struct Env *env, uint8_t *binary, size_t size) {
 
     #ifdef CONFIG_KSPACE
         bind_functions(env, binary, size, image_start, image_end);
-
-        // LAB 8: Your code here
-        void *stack = kzalloc_region(USER_STACK_SIZE);
-        map_region(&(env->address_space), (uintptr_t) (USER_STACK_TOP - USER_STACK_SIZE),
-            &kspace, (uintptr_t) stack, USER_STACK_SIZE, PROT_R | PROT_W | PROT_USER_);
     #endif
-
+    
     return 0;
 }
 
