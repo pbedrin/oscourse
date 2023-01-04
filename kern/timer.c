@@ -89,81 +89,67 @@ acpi_find_table(const char *sign) {
      */
 
     // LAB 5: Your code here
-    static RSDT *rsdt = 0;
-    static bool isXSDT = 0;
+    static RSDT *rsdt;
+    static size_t rsdt_len;
+    static size_t rsdt_entsz;
+    uint64_t rsdt_phys;
+    size_t i = 0;
+    uint8_t checksum = 0;
+    uint64_t fadt_phys = 0;
 
     if (!rsdt) {
         if (!uefi_lp->ACPIRoot)
             panic("No rsdp\n");
 
-        physaddr_t acpi_phys = uefi_lp->ACPIRoot;
-        RSDP *rsdp = mmio_map_region((physaddr_t)acpi_phys, sizeof(*rsdp));
+        RSDP *rsdp = mmio_map_region(uefi_lp->ACPIRoot, sizeof(RSDP));
 
-        /* Validate */
-        if (strncmp(rsdp->Signature, "RSD PTR ", 8))
-            panic("Malformed RSDP");
-
-        physaddr_t rsdt_phys;
-        if (rsdp->Revision) {
-            /* ACPI 2.0 or higher is used */
-            /* Validate checksum of full struct 
-             * Calculate and validate checksum of first and second halfs*/
-            uint8_t checksum = 0;
-            uint8_t *iter;
-            for (iter = (uint8_t *)rsdp; iter < (uint8_t *)&(rsdp->Length); iter++)
-                checksum = (uint8_t)(checksum + *iter);
-
+        if (!rsdp->Revision) {
+            for (i = 0; i < offsetof(RSDP, Length); i++)
+                checksum += ((uint8_t *)rsdp)[i];
             if (checksum)
-                panic("Malformed RSDP");
-
-            for (; iter < ((uint8_t *)rsdp + sizeof(*rsdp)); iter++)
-                checksum = (uint8_t)(checksum + *iter);
-
-            if (checksum)
-                panic("Malformed RSDP");
-
-            rsdt_phys = rsdp->XsdtAddress;
-            isXSDT = 1;
-        } else {
-            /* ACPI 1.0 is used */
-            uint8_t checksum = 0;
-            uint8_t *iter;
-            /* Validate checksum of first half of struct */
-            for (iter = (uint8_t *)rsdp; iter < (uint8_t *)&(rsdp->Length); iter++)
-                checksum = (uint8_t)(checksum + *iter);
-
-            if (checksum)
-                panic("Malformed RSDP");
+                panic("Malformed RSDP\n");
             rsdt_phys = rsdp->RsdtAddress;
+            rsdt_entsz = 4;
+        } else {
+            for (i = 0; i < rsdp->Length; i++)
+                checksum += ((uint8_t *)rsdp)[i];
+            if (checksum)
+                panic("Malformed RSDP\n");
+            rsdt_phys = rsdp->XsdtAddress;
+            rsdt_entsz = 8;
         }
 
         rsdt = mmio_map_region(rsdt_phys, sizeof(RSDT));
-        /* Remap using actual size */
-        rsdt = mmio_map_region(rsdt_phys, rsdt->h.Length);
+        rsdt = mmio_remap_last_region(rsdt_phys, rsdt, sizeof(RSDP), rsdt->h.Length);
 
-        /* Validate header checksum */
-        uint8_t checksum = 0;
- 
-        for (int i = 0; i < rsdt->h.Length; i++)
-            checksum = (uint8_t)(checksum + ((uint8_t *) &rsdt->h)[i]);
+        for (i = 0; i < rsdt->h.Length; i++)
+            checksum += ((uint8_t *)rsdt)[i];
         if (checksum)
-                panic("Malformed RSDT header");
+            panic("Malformed RSDP\n");
+        if (!rsdp->Revision) {
+            if (strncmp(rsdt->h.Signature, "RSDT", 4))
+                panic("Malformed RSDT\n");
+            rsdt_len = (rsdt->h.Length - sizeof(RSDT)) / 4;
+        } else {
+            if (strncmp(rsdt->h.Signature, "XSDT", 4))
+                panic("Malformed RSDT\n");
+            rsdt_len = (rsdt->h.Length - sizeof(RSDT)) / 8;
+        }
     }
 
-    size_t entries_cnt = (rsdt->h.Length - sizeof(ACPISDTHeader)) / (isXSDT ? 8 : 4);
-    for (size_t i = 0; i < entries_cnt; i++) {
-        physaddr_t header_physical = rsdt->PointerToOtherSDT[i];
-        if (!header_physical)
-            continue;
-        ACPISDTHeader *header = mmio_map_region(header_physical, sizeof(ACPISDTHeader));
-        /* Remap using actual size */
-        header = mmio_map_region(header_physical, header->Length);
-
-        if (!strncmp(header->Signature, sign, 4))
-            return header;
+    ACPISDTHeader *head = NULL;
+    for (i = 0; i < rsdt_len; i++) {
+        memcpy(&fadt_phys, (uint8_t *)rsdt->PointerToOtherSDT + i * rsdt_entsz, rsdt_entsz);
+        head = mmio_map_region(fadt_phys, sizeof(ACPISDTHeader));
+        head = mmio_remap_last_region(fadt_phys, head, sizeof(ACPISDTHeader), rsdt->h.Length);
+        for (size_t i = 0; i < head->Length; i++)
+            checksum += ((uint8_t *)head)[i];
+        if (checksum)
+            panic("Invalid ACPI table '%.4s'", head->Signature);
+        if (!strncmp(head->Signature, sign, 4))
+            return head;
     }
-
-
+    
     return NULL;
 }
 
@@ -294,12 +280,10 @@ void
 hpet_enable_interrupts_tim0(void) {
     // LAB 5: Your code here
     hpetReg->GEN_CONF |= HPET_LEG_RT_CNF;
-    hpetReg->TIM0_CONF = 0;
     hpetReg->TIM0_CONF |= (IRQ_TIMER << 9);
-    hpetReg->TIM0_CONF |= HPET_TN_TYPE_CNF;
-    hpetReg->TIM0_CONF |= HPET_TN_INT_ENB_CNF;
-    hpetReg->TIM0_CONF |= HPET_TN_VAL_SET_CNF;
-    hpetReg->TIM0_COMP = Peta / 2 / hpetFemto;
+    hpetReg->TIM0_CONF |= HPET_TN_TYPE_CNF | HPET_TN_INT_ENB_CNF | HPET_TN_VAL_SET_CNF;
+    hpetReg->TIM0_COMP = hpet_get_main_cnt() + Peta / hpetFemto / 2;
+    hpetReg->TIM0_COMP = Peta / hpetFemto / 2;
     pic_irq_unmask(IRQ_TIMER);
 }
 
@@ -307,12 +291,10 @@ void
 hpet_enable_interrupts_tim1(void) {
     // LAB 5: Your code here
     hpetReg->GEN_CONF |= HPET_LEG_RT_CNF;
-    hpetReg->TIM1_CONF = 0;
-    hpetReg->TIM1_CONF |= (IRQ_CLOCK << 9);
-    hpetReg->TIM1_CONF |= HPET_TN_TYPE_CNF;
-    hpetReg->TIM1_CONF |= HPET_TN_INT_ENB_CNF;
-    hpetReg->TIM1_CONF |= HPET_TN_VAL_SET_CNF;
-    hpetReg->TIM1_COMP = 3 * Peta / 2 / hpetFemto;
+    hpetReg->TIM1_CONF = (IRQ_CLOCK << 9);
+    hpetReg->TIM1_CONF |= HPET_TN_TYPE_CNF | HPET_TN_INT_ENB_CNF | HPET_TN_VAL_SET_CNF;
+    hpetReg->TIM1_COMP = hpet_get_main_cnt() + Peta / hpetFemto / 2 * 3;
+    hpetReg->TIM1_COMP = Peta / hpetFemto / 2 * 3;
     pic_irq_unmask(IRQ_CLOCK);
 }
 
