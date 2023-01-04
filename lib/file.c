@@ -108,9 +108,9 @@ devfile_flush(struct Fd *fd) {
 static ssize_t
 devfile_read(struct Fd *fd, void *buf, size_t n) {
     /* Make an FSREQ_READ request to the file system server after
-   * filling fsipcbuf.read with the request arguments.  The
-   * bytes read will be written back to fsipcbuf by the file
-   * system server. */
+     * filling fsipcbuf.read with the request arguments.  The
+     * bytes read will be written back to fsipcbuf by the file
+     * system server. */
 
     // LAB 10: Your code here:
     size_t i = 0;
@@ -137,9 +137,9 @@ devfile_read(struct Fd *fd, void *buf, size_t n) {
 static ssize_t
 devfile_write(struct Fd *fd, const void *buf, size_t n) {
     /* Make an FSREQ_WRITE request to the file system server.  Be
-   * careful: fsipcbuf.write.req_buf is only so large, but
-   * remember that write is always allowed to write *fewer*
-   * bytes than requested. */
+     * careful: fsipcbuf.write.req_buf is only so large, but
+     * remember that write is always allowed to write *fewer*
+     * bytes than requested. */
     // LAB 10: Your code here:
     size_t i = 0;
     for (i = 0; i < n;) {
@@ -188,4 +188,32 @@ sync(void) {
      * by writing any dirty blocks in the buffer cache. */
 
     return fsipc(FSREQ_SYNC, NULL);
+}
+
+int
+symlink(const char *symlink_path, const char *path) {
+    char cur_path[MAXPATHLEN] = {0};
+    if (path[0] != '/') {
+        getcwd(cur_path, MAXPATHLEN);
+        strcat(cur_path, path);
+    } else {
+        strcat(cur_path, path);
+    }
+    char symlink_cur_path[MAXPATHLEN] = {0};
+    if (symlink_path[0] != '/') {
+        getcwd(symlink_cur_path, MAXPATHLEN);
+        strcat(symlink_cur_path, symlink_path);
+    } else {
+        strcat(symlink_cur_path, symlink_path);
+    }
+    int fd = open(symlink_cur_path, O_MKLINK | O_WRONLY | O_SYSTEM | O_EXCL);
+    if (fd < 0) {
+        return fd;
+    }
+    int res = write(fd, cur_path, sizeof(cur_path));
+    if (res != sizeof(cur_path)) {
+        return res;
+    }
+    close(fd);
+    return 0;
 }

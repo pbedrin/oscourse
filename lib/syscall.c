@@ -10,7 +10,7 @@ syscall(uintptr_t num, bool check, uintptr_t a1, uintptr_t a2, uintptr_t a3, uin
     /* Generic system call.
      * Pass system call number in RAX,
      * Up to six parameters in RDX, RCX, RBX, RDI, RSI and R8.
-     * 
+     *
      * Registers are assigned using GCC externsion
      */
 
@@ -20,7 +20,7 @@ syscall(uintptr_t num, bool check, uintptr_t a1, uintptr_t a2, uintptr_t a3, uin
                            _a5 asm("rsi") = a5, _a6 asm("r8") = a6;
 
     /* Interrupt kernel with T_SYSCALL.
-     * 
+     *
      * The "volatile" tells the assembler not to optimize
      * this instruction away just because we don't use the
      * return value.
@@ -81,8 +81,7 @@ sys_alloc_region(envid_t envid, void *va, size_t size, int perm) {
     int res = syscall(SYS_alloc_region, 1, envid, (uintptr_t)va, size, perm, 0, 0);
 #ifdef SANITIZE_USER_SHADOW_BASE
     /* Unpoison the allocated page */
-    if (!res && thisenv && envid == CURENVID && ((uintptr_t)va < SANITIZE_USER_SHADOW_BASE ||
-                 (uintptr_t)va >= SANITIZE_USER_SHADOW_SIZE + SANITIZE_USER_SHADOW_BASE)) {
+    if (!res && thisenv && envid == CURENVID && ((uintptr_t)va < SANITIZE_USER_SHADOW_BASE || (uintptr_t)va >= SANITIZE_USER_SHADOW_SIZE + SANITIZE_USER_SHADOW_BASE)) {
         platform_asan_unpoison(va, size);
     }
 #endif
@@ -146,4 +145,9 @@ sys_ipc_recv(void *dstva, size_t size) {
 int
 sys_gettime(void) {
     return syscall(SYS_gettime, 0, 0, 0, 0, 0, 0, 0);
+}
+
+int
+sys_env_set_workpath(envid_t envid, const char *path) {
+    return syscall(SYS_env_set_workpath, 0, envid, (uintptr_t)path, 0, 0, 0, 0);
 }

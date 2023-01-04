@@ -67,10 +67,10 @@ char *readline(const char *buf);
 #define PROT_W       0x2 /* Writable */
 #define PROT_R       0x4 /* Readable (mostly ignored) */
 #define PROT_RW      (PROT_R | PROT_W)
-#define PROT_WC      0x8 /* Write-combining */
-#define PROT_CD      0x18 /* Cache disable */
-#define PROT_SHARE   0x40 /* Shared copy flag */
-#define PROT_LAZY    0x80 /* Copy-on-Write flag */
+#define PROT_WC      0x8   /* Write-combining */
+#define PROT_CD      0x18  /* Cache disable */
+#define PROT_SHARE   0x40  /* Shared copy flag */
+#define PROT_LAZY    0x80  /* Copy-on-Write flag */
 #define PROT_COMBINE 0x100 /* Combine old and new priviliges */
 #define PROT_AVAIL   0xA00 /* Free-to-use flags, available for applications */
 /* (mapped directly to page table unused flags) */
@@ -94,6 +94,8 @@ int sys_unmap_region(envid_t env, void *pg, size_t size);
 int sys_ipc_try_send(envid_t to_env, uint64_t value, void *pg, size_t size, int perm);
 int sys_ipc_recv(void *rcv_pg, size_t size);
 int sys_gettime(void);
+
+int sys_env_set_workpath(envid_t envid, const char *path);
 
 int vsys_gettime(void);
 
@@ -140,6 +142,11 @@ int ftruncate(int fd, off_t size);
 int remove(const char *path);
 int sync(void);
 
+int chmod(const char *path, int perm);
+int symlink(const char *symlink_path, const char *path);
+int beauty_path(char *new, const char *path);
+int skip_doubledots(char *new, const char *path);
+
 /* spawn.c */
 envid_t spawn(const char *program, const char **argv);
 envid_t spawnl(const char *program, const char *arg0, ...);
@@ -157,6 +164,11 @@ int pipeisclosed(int pipefd);
 /* wait.c */
 void wait(envid_t env);
 
+/* dir.c */
+int chdir(const char *path, int mode);
+char *getcwd(char *buffer, int maxlen);
+int mkdir(const char *dirname);
+
 /* File open modes */
 #define O_RDONLY  0x0000 /* open for reading only */
 #define O_WRONLY  0x0001 /* open for writing only */
@@ -168,10 +180,10 @@ void wait(envid_t env);
 #define O_EXCL  0x0400 /* error if already exists */
 #define O_MKDIR 0x0800 /* create directory, not regular file */
 
-#ifdef JOS_PROG
-extern void (*volatile sys_exit)(void);
-extern void (*volatile sys_yield)(void);
-#endif
+#define O_CHMOD  0x1000 /* change file permissions */
+#define O_MKLINK 0x2000 /* create symlink */
+#define O_SYSTEM 0x4000 /* for read/write information to symlinks */
+#define O_SPAWN  0x8000 /* for opening for execution */
 
 #ifndef debug
 #define debug 0

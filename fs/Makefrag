@@ -15,6 +15,7 @@ FSIMGTXTFILES :=	fs/newmotd \
 			fs/testshell.sh
 
 USERAPPS :=		$(OBJDIR)/user/init \
+ 			$(OBJDIR)/user/rm \
 			$(OBJDIR)/user/cat \
 			$(OBJDIR)/user/echo \
 			$(OBJDIR)/user/ls \
@@ -32,6 +33,13 @@ USERAPPS :=		$(OBJDIR)/user/init \
 			$(OBJDIR)/user/hello \
 			$(OBJDIR)/user/date \
 			$(OBJDIR)/user/vdate \
+			$(OBJDIR)/user/mkdir \
+			$(OBJDIR)/user/pwd \
+			$(OBJDIR)/user/cd \
+			$(OBJDIR)/user/touch \
+			$(OBJDIR)/user/ln \
+			$(OBJDIR)/user/chmod \
+			$(OBJDIR)/user/testfile
 
 
 FSIMGFILES := $(FSIMGTXTFILES) $(USERAPPS)

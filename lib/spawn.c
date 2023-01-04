@@ -78,7 +78,13 @@ spawn(const char *prog, const char **argv) {
 
     // TODO Properly load ELF and check errors
 
-    int fd = open(prog, O_RDONLY);
+    if (!strcmp(prog, "/cd") || !strcmp(prog, "cd")) {
+        int res = chdir(argv[1], 0);
+        if (res < 0) {
+            return res;
+        }
+    }
+    int fd = open(prog, O_RDONLY | O_SPAWN);
     if (fd < 0) return fd;
 
     /* Read elf header */
@@ -153,9 +159,9 @@ error2:
 int
 spawnl(const char *prog, const char *arg0, ...) {
     /* We calculate argc by advancing the args until we hit NULL.
-    * The contract of the function guarantees that the last
-    * argument will always be NULL, and that none of the other
-    * arguments will be NULL. */
+     * The contract of the function guarantees that the last
+     * argument will always be NULL, and that none of the other
+     * arguments will be NULL. */
     int argc = 0;
     va_list vl;
     va_start(vl, arg0);
@@ -163,7 +169,7 @@ spawnl(const char *prog, const char *arg0, ...) {
     va_end(vl);
 
     /* Now that we have the size of the args, do a second pass
-    * and store the values in a VLA, which has the format of argv */
+     * and store the values in a VLA, which has the format of argv */
     const char *argv[argc + 2];
     argv[0] = arg0;
     argv[argc + 1] = NULL;
@@ -193,7 +199,7 @@ init_stack(envid_t child, const char **argv, struct Trapframe *tf) {
     uintptr_t *argv_store;
 
     /* Count the number of arguments (argc)
-    * and the total amount of space needed for strings (string_size). */
+     * and the total amount of space needed for strings (string_size). */
     string_size = 0;
     for (argc = 0; argv[argc] != 0; argc++)
         string_size += strlen(argv[argc]) + 1;
@@ -265,7 +271,7 @@ static int
 map_segment(envid_t child, uintptr_t va, size_t memsz,
             int fd, size_t filesz, off_t fileoffset, int perm) {
 
-    //cprintf("map_segment %x+%x\n", va, memsz);
+    // cprintf("map_segment %x+%x\n", va, memsz);
 
     /* Fixup unaligned destination */
     int res = PAGE_OFFSET(va);

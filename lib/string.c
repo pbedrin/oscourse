@@ -279,3 +279,71 @@ strtol(const char *s, char **endptr, int base) {
 
     return (neg ? -val : val);
 }
+
+bool
+is_delim(char c, char *delim) {
+    while (*delim != '\0') {
+        if (c == *delim)
+            return true;
+        delim++;
+    }
+    return false;
+}
+
+char *
+strtok(char *s, char *delim) {
+    static char *p; // start of the next search
+    if (!s) {
+        s = p;
+    }
+    if (!s) {
+        return NULL;
+    }
+    while (1) {
+        if (is_delim(*s, delim)) {
+            s++;
+            continue;
+        }
+        if (*s == '\0') {
+            return NULL;
+        }
+        break;
+    }
+
+    char *ret = s;
+    while (1) {
+        if (*s == '\0') {
+            p = s; // next exec will return NULL
+            return ret;
+        }
+        if (is_delim(*s, delim)) {
+            *s = '\0';
+            p = s + 1;
+            return ret;
+        }
+        s++;
+    }
+}
+
+char *
+strstr(char *haystack, char *needle) {
+    char *needle_ptr = NULL, *haystack_ptr = NULL;
+
+    if (haystack == NULL || needle == NULL)
+        return NULL;
+
+    while (*haystack) {
+        if (*haystack == *needle) {
+            int trigger_out = 1;
+            needle_ptr = needle;
+            haystack_ptr = haystack;
+            while (*needle_ptr && *haystack_ptr) {
+                trigger_out = trigger_out && (*needle_ptr == *haystack_ptr);
+            }
+            if (trigger_out)
+                return haystack;
+        }
+        ++haystack;
+    }
+    return NULL;
+}
