@@ -110,6 +110,7 @@ env_init(void) {
     env_free_list = &envs[0];
     for (size_t i = 0; i < NENV - 1; i++) {
         envs[i].env_link = &envs[i + 1];
+        strcpy(envs[i].workpath,"/");
     }
 
     // LAB 12: Your code here

@@ -43,6 +43,91 @@ struct Dev devfile = {
         .dev_write = devfile_write,
         .dev_trunc = devfile_trunc};
 
+int
+skip_dots(char *new, const char *path) {
+    int len = strlen(path);
+    for (int i = 0, j = 0; i < len; i++) {
+        if (path[i] == '/' && path[i + 1] == '.' && i == len - 2) {
+            return 0;
+        }
+        if (path[i] == '/' && path[i + 1] == '.' && path[i + 2] == '/') {
+            new[j] = '/';
+            j++;
+            i = i + 1;
+            continue;
+        }
+        new[j] = path[i];
+        j++;
+    }
+    return 0;
+}
+
+int
+skip_doubledots(char *new, const char *path) {
+    int len = strlen(path);
+    char tmp[MAXPATHLEN] = {0};
+    strcpy(tmp, path);
+    int skip = 0;
+    for (int i = len - 1; i >= 0; i--) {
+        if (tmp[i] == '.' && tmp[i - 1] == '.' && tmp[i - 2] == '/') {
+            skip = 1;
+            tmp[i] = '#';
+            tmp[i - 1] = '#';
+            i = i - 1;
+            continue;
+        }
+        if (tmp[i] == '/' && tmp[i - 1] == '.' && tmp[i - 2] == '.' && tmp[i - 3] == '/') {
+            skip++;
+            tmp[i - 2] = '#';
+            tmp[i - 1] = '#';
+            i = i - 2;
+            continue;
+        }
+        if (tmp[i] == '/' && skip > 0) {
+            if (i == 0) {
+                break;
+            }
+            i--;
+            while (tmp[i] != '/') {
+                tmp[i] = '#';
+                i--;
+            }
+            i++;
+            skip--;
+        }
+    }
+    for (int i = 0, j = 0; i < len; i++) {
+        if (tmp[i] != '#') {
+            new[j] = tmp[i];
+            j++;
+        }
+    }
+    memset(tmp, 0, MAXPATHLEN);
+    beauty_path(tmp, new);
+    strcpy(new, tmp);
+    return 0;
+}
+
+
+int
+beauty_path(char *new, const char *path) {
+    char tmp[MAXPATHLEN] = {0};
+    skip_dots(tmp, path);
+    int len = strlen(tmp);
+    for (int i = 0, j = 0; i < len; i++) {
+        if (tmp[i] == '/') {
+            new[j] = tmp[i];
+            j++;
+        }
+        while (tmp[i] == '/') {
+            i++;
+        }
+        new[j] = tmp[i];
+        j++;
+    }
+    return 0;
+}
+
 /* Open a file (or directory).
  *
  * Returns:
@@ -168,6 +253,8 @@ devfile_stat(struct Fd *fd, struct Stat *st) {
     strcpy(st->st_name, fsipcbuf.statRet.ret_name);
     st->st_size = fsipcbuf.statRet.ret_size;
     st->st_isdir = fsipcbuf.statRet.ret_isdir;
+    st->st_perm = fsipcbuf.statRet.ret_perm;
+    st->st_issym = fsipcbuf.statRet.ret_issym;
 
     return 0;
 }
@@ -188,6 +275,27 @@ sync(void) {
      * by writing any dirty blocks in the buffer cache. */
 
     return fsipc(FSREQ_SYNC, NULL);
+}
+
+int
+remove(const char *path) {
+    char cur_path[MAXPATHLEN] = {0};
+    if (path[0] != '/') {
+        getcwd(cur_path, MAXPATHLEN);
+        strcat(cur_path, path);
+    } else {
+        strcat(cur_path, path);
+    }
+    char new[MAXPATHLEN] = {0};
+    char tmp[MAXPATHLEN] = {0};
+    beauty_path(new, cur_path);
+    skip_doubledots(tmp, new);
+    strcpy(fsipcbuf.remove.req_path, tmp);
+    int res = fsipc(FSREQ_REMOVE, NULL);
+    if (res < 0) {
+        return res;
+    }
+    return 0;
 }
 
 int
