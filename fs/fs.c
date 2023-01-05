@@ -351,6 +351,24 @@ file_create(const char *path, struct File **pf) {
 }
 
 int
+dir_create(const char *path, struct File **pf) {
+    char name[MAXNAMELEN];
+    int res;
+    struct File *dir, *filp;
+
+    if (!(res = walk_path(path, &dir, &filp, name))) return -E_FILE_EXISTS;
+    if (res != -E_NOT_FOUND || dir == 0) return res;
+    if ((res = dir_alloc_file(dir, &filp)) < 0) return res;
+
+    strcpy(filp->f_name, name);
+    filp->f_type = FTYPE_DIR;
+    filp->f_perm = PERM_READ | PERM_WRITE | PERM_EXEC;
+    *pf = filp;
+    file_flush(dir);
+    return 0;
+}
+
+int
 link_create(const char *path, struct File **pf) {
     char name[MAXNAMELEN];
     int res;
@@ -470,6 +488,14 @@ file_set_size(struct File *f, off_t newsize) {
     if (f->f_size > newsize)
         file_truncate_blocks(f, newsize);
     f->f_size = newsize;
+    flush_block(f);
+    return 0;
+}
+
+/* Set the permissions of file f. */
+int
+file_set_perm(struct File *f, uint8_t perm) {
+    f->f_perm = perm;
     flush_block(f);
     return 0;
 }

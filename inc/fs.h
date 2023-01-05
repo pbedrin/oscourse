@@ -56,7 +56,8 @@ struct File {
 #define FTYPE_REG 0 /* Regular file */
 #define FTYPE_DIR 1 /* Directory */
 #define FTYPE_LINK 2 /* Symlink */
-		
+
+/* RWX flags */
 #define PERM_READ 4
 #define PERM_WRITE 2
 #define PERM_EXEC 1

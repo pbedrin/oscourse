@@ -109,6 +109,45 @@ serve_open(envid_t envid, struct Fsreq_open *req,
         return res;
     }
 
+    int last = 0;
+    int i, len, flag = 0;
+	struct File *d;
+try_link: 
+	flag = 0;
+	len = strlen(path);
+	for (i = 1; i < len - 1; i++) {
+		if (path[i] == '/' && i > last) {
+			path[i] = '\0';
+			flag = 1;
+			break;
+		}
+	}
+	if (flag == 1) {
+		if ((res = file_open(path, &d)) < 0) {
+			if (debug) cprintf("file_open failed: %i", res);
+				return res;
+		}
+		path[i] = '/';
+		if (d->f_type == FTYPE_LINK) {
+			char cur_path[MAXPATHLEN] = {0};
+			char tmp[MAXPATHLEN] = {0};
+			strcpy(tmp, path);
+			file_read(d, cur_path, sizeof(cur_path), 0);
+			memmove(path, cur_path, MAXPATHLEN);
+			if (strcmp(path, "/")) {
+				strcat(path, &tmp[i]);
+			} else {
+				strcat(path, &tmp[i + 1]);
+			}
+			flag = 0;
+			goto try_link;
+		} else {
+			last = i;
+			flag = 0;
+			goto try_link;
+		}
+	}
+
     /* Open the file */
     if (req->req_omode & O_CREAT) {
         if ((res = file_create(path, &f)) < 0) {
@@ -117,10 +156,91 @@ serve_open(envid_t envid, struct Fsreq_open *req,
             if (debug) cprintf("file_create failed: %i", res);
             return res;
         }
+    } else if (req->req_omode & O_MKDIR) {
+        if ((res = dir_create(path, &f)) < 0) {
+            if (!(req->req_omode & O_EXCL) && res == -E_FILE_EXISTS)
+                goto try_open;
+            if (debug) cprintf("dir_create failed: %i", res);
+            return res;
+        }
+    } else if (req->req_omode & O_MKLINK) {
+        if ((res = link_create(path, &f)) < 0) {
+            if (!(req->req_omode & O_EXCL) && res == -E_FILE_EXISTS)
+                goto try_open;
+            if (debug) cprintf("dir_create failed: %i", res);
+            return res;
+        }
     } else {
     try_open:
-        if ((res = file_open(path, &f)) < 0) {
+		if ((res = file_open(path, &f)) < 0) {
+			if (debug) cprintf("file_open failed: %i", res);
+				return res;
+		}
+    }
+
+    if (f->f_type != FTYPE_DIR) {	
+		int i;
+		struct File *d;
+		int len = strlen(path);
+		for (i = len - 2; i >= 0; i--) {
+			if (i == 0) {
+				break;
+			}
+			if (path[i] == '/') {
+				path[i] = '\0';
+				break;
+			}
+		}
+		char tmp = '/';
+		if (i == 0) {
+			tmp = path[i + 1];
+			path[i + 1] = '\0';
+		}
+		if ((res = file_open(path, &d)) < 0) {
             if (debug) cprintf("file_open failed: %i", res);
+            return res;
+        }
+        if (d->f_type != FTYPE_DIR) {
+			cprintf("no such directory\n");
+			return -E_INVAL;
+		}
+		if (!(d->f_perm & PERM_WRITE)) {
+			cprintf("you have not permissions to use files in this directory\n");
+			return -E_INVAL;
+		}
+		if (i == 0) {
+			path[i + 1] = tmp;
+		} else {
+			path[i] = '/';
+		}
+		if (!(req->req_omode & O_SPAWN)) {
+			if (!(req->req_omode & O_CHMOD) && !(f->f_perm & PERM_READ) && ((req->req_omode & O_ACCMODE) == O_RDONLY || (req->req_omode & O_ACCMODE) == O_RDWR)) {
+				cprintf("You haven't permissions to read this file.\n");
+				return -E_INVAL;
+			}
+		} else {
+			if (!(req->req_omode & O_CHMOD) && !(f->f_perm & PERM_EXEC) && ((req->req_omode & O_ACCMODE) == O_RDONLY || (req->req_omode & O_ACCMODE) == O_RDWR)) {
+				cprintf("You haven't permissions to execute this file.\n");
+				return -E_INVAL;
+			}
+		}
+		if (!(req->req_omode & O_CHMOD) && !(f->f_perm & PERM_WRITE) && ((req->req_omode & O_ACCMODE) == O_WRONLY || (req->req_omode & O_ACCMODE) == O_RDWR)) {
+			cprintf("You haven't permissions to write to this file.\n");
+			return -E_INVAL;
+		}
+	} else {
+		if (!(req->req_omode & O_CHMOD) && !(f->f_perm & PERM_EXEC) && (req->req_omode & O_ACCMODE) == O_RDONLY) {
+			cprintf("You haven't permissions to change this dir.\n");
+			return -E_INVAL;
+		}
+		if (!(req->req_omode & O_CHMOD) && !(f->f_perm & PERM_READ) && (req->req_omode & O_ACCMODE) == O_RDWR) {
+			cprintf("You haven't permissions to read this dir.\n");
+			return -E_INVAL;
+		}
+	}
+	if (req->req_omode & O_CHMOD) {
+        if ((res = file_set_perm(f, (req->req_omode & 0x70) >> 0x4)) < 0) {
+            if (debug) cprintf("file_set_perm failed: %i", res);
             return res;
         }
     }
@@ -136,6 +256,24 @@ serve_open(envid_t envid, struct Fsreq_open *req,
         if (debug) cprintf("file_open failed: %i", res);
         return res;
     }
+
+    if (f->f_type == FTYPE_LINK && !(req->req_omode & O_SYSTEM)) {
+		char cur_path[MAXPATHLEN] = {0};
+		file_read(f, cur_path, sizeof(cur_path), 0);
+		memmove(path, cur_path, MAXPATHLEN);
+		goto try_open;
+	}
+
+	if (f->f_type == FTYPE_DIR && !(req->req_omode & O_SYSTEM)) {
+		if ((req->req_omode & O_ACCMODE) == O_RDONLY && req->req_omode & O_SPAWN) {
+			cprintf("You haven't permissions to execute this dir.\n");
+			return -E_INVAL;
+		}
+		if ((req->req_omode & O_ACCMODE) == O_WRONLY) {
+			cprintf("You haven't permissions to write this dir.\n");
+			return -E_INVAL;
+		}
+	}
 
     /* Save the file pointer */
     o->o_file = f;
@@ -213,6 +351,12 @@ serve_read(envid_t envid, union Fsipc *ipc) {
     return count;
 }
 
+int 
+serve_remove(envid_t envid, union Fsipc *ipc) {
+	struct Fsreq_remove *req = &ipc->remove;
+	return file_remove(req->req_path);
+}
+
 /* Write req->req_n bytes from req->req_buf to req_fileid, starting at
  * the current seek position, and update the seek position
  * accordingly.  Extend the file if necessary.  Returns the number of
@@ -253,6 +397,8 @@ serve_stat(envid_t envid, union Fsipc *ipc) {
     strcpy(ret->ret_name, o->o_file->f_name);
     ret->ret_size = o->o_file->f_size;
     ret->ret_isdir = (o->o_file->f_type == FTYPE_DIR);
+    ret->ret_issym = (o->o_file->f_type == FTYPE_LINK);
+    ret->ret_perm = o->o_file->f_perm;
     return 0;
 }
 
@@ -286,7 +432,8 @@ fshandler handlers[] = {
         [FSREQ_FLUSH] = serve_flush,
         [FSREQ_WRITE] = serve_write,
         [FSREQ_SET_SIZE] = serve_set_size,
-        [FSREQ_SYNC] = serve_sync};
+        [FSREQ_SYNC] = serve_sync,
+        [FSREQ_REMOVE] = serve_remove};
 #define NHANDLERS (sizeof(handlers) / sizeof(handlers[0]))
 
 void
