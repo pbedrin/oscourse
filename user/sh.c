@@ -49,11 +49,11 @@ again:
              * then close the original 'fd'. */
 
             // LAB 11: Your code here
-            if ((fd = open(t, O_RDONLY)) < 0) {
-                cprintf("open %s for read: %i\n", t, fd);
-                exit();
-            }
-            if (fd != 0) {
+            fd = open(t, O_RDONLY);
+            if (fd < 0) {
+				cprintf("open %s for read %i\n", t, fd);
+				exit();
+			} else if (fd != 0) {
                 dup(fd, 0);
                 close(fd);
             }
@@ -82,7 +82,7 @@ again:
             }
             if (debug) cprintf("PIPE: %d %d\n", p[0], p[1]);
             if ((r = fork()) < 0) {
-                cprintf("fork: %i\n", r);
+                cprintf("fork: %i", r);
                 exit();
             }
             if (r == 0) {
@@ -246,11 +246,12 @@ usage(void) {
     exit();
 }
 
+
 void
 umain(int argc, char **argv) {
     int r, interactive, echocmds;
     struct Argstate args;
-
+    
     interactive = '?';
     echocmds = 0;
     argstart(&argc, argv, &args);
@@ -277,9 +278,10 @@ umain(int argc, char **argv) {
             panic("open %s: %i", argv[1], r);
         assert(r == 0);
     }
-    if (interactive == '?')
+    if (interactive == '?') {
         interactive = iscons(0);
-
+	}
+	          
     while (1) {
         char *buf;
 

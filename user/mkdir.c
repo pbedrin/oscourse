@@ -3,13 +3,13 @@
 void 
 umain(int argc, char **argv) {
     if (argc != 2 && argc != 3) {
-        printf("Usage: mkdir <-p> [directory name or path]\n");
+        printf("usage: mkdir <-p> [directory name or path]\n");
         return;
     }
     if (argc == 2) {
 		int res = mkdir((const char *)argv[1]);
 		if (res < 0) {
-			printf("Error: creation dir with %s: %d\n", argv[0], res);
+			printf("error on creation dir with %s: %d\n", argv[0], res);
 		}
 		return;
 	}
@@ -37,7 +37,7 @@ umain(int argc, char **argv) {
 			}
 		}
 	} else {
-		printf("Usage: mkdir <-p> [directory name or path]\n");
+		printf("usage: mkdir <-p> [directory name or path]\n");
         return;
 	}
 }
