@@ -396,6 +396,8 @@ sys_env_set_trapframe(envid_t envid, struct Trapframe *tf) {
     return 0;
 }
 
+/* This function takes an environment ID 'envid' and a path 'path' as input and
+ * sets the workpath of the environment specified by 'envid' to 'path'. */
 static int
 sys_env_set_workpath(envid_t envid, const char *path) {
     struct Env *env = NULL;

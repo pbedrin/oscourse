@@ -147,6 +147,8 @@ sys_gettime(void) {
     return syscall(SYS_gettime, 0, 0, 0, 0, 0, 0, 0);
 }
 
+/* The function 'sys_env_set_workpath' appears to make a system call to set the working path of 
+* an environment with a given identifier 'envid' to the specified path. */
 int
 sys_env_set_workpath(envid_t envid, const char *path) {
     return syscall(SYS_env_set_workpath, 0, envid, (uintptr_t)path, 0, 0, 0, 0);

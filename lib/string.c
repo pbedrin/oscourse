@@ -280,6 +280,7 @@ strtol(const char *s, char **endptr, int base) {
     return (neg ? -val : val);
 }
 
+/* This function checks if the character 'c' is a delimiter. */
 bool
 is_delim(char c, char *delim) {
     while (*delim != '\0') {
@@ -290,6 +291,7 @@ is_delim(char c, char *delim) {
     return false;
 }
 
+/* The strtok function is used to split a string */
 char *
 strtok(char *s, char *delim) {
     static char *p; // start of the next search
@@ -325,6 +327,8 @@ strtok(char *s, char *delim) {
     }
 }
 
+/* This function searches for the first occurrence of a string in another string. 
+* It returns a pointer to the first character of the first occurrence. */
 char *
 strstr(char *haystack, char *needle) {
     char *needle_ptr = NULL, *haystack_ptr = NULL;
