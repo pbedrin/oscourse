@@ -11,7 +11,9 @@ cat(int f, char *s) {
         if (f == 0) {
             int len = strlen(buf);
             for (int i = 0; i < len; i++) {
-                if (buf[i] == 13) {
+                /* If 'f' is '0', it means that f represents standard input, and the loop converts 
+                * all carriage return characters (13) to newline characters ('\n'). */
+                if (buf[i] == 13) { 
                     buf[i] = '\n';
                 }
             }
