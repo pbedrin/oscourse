@@ -241,7 +241,7 @@ dir_alloc_file(struct File *dir, struct File **file) {
     *file = (struct File *)blk;
     return 0;
 }
-
+/* Counting the number of files in the directory */
 static int
 dir_num_file(struct File *dir) {
     char *blk;
@@ -350,6 +350,8 @@ file_create(const char *path, struct File **pf) {
     return 0;
 }
 
+/* function that creates a new directory on the specified path and return 0.
+ * On error return < 0. */
 int
 dir_create(const char *path, struct File **pf) {
     char name[MAXNAMELEN];
@@ -368,6 +370,8 @@ dir_create(const char *path, struct File **pf) {
     return 0;
 }
 
+/* function that creates a new symbolic link on the specified path and return 0.
+ * On error return < 0. */
 int
 link_create(const char *path, struct File **pf) {
     char name[MAXNAMELEN];
@@ -500,6 +504,7 @@ file_set_perm(struct File *f, uint8_t perm) {
     return 0;
 }
 
+/* A function that removes a file from a directory. */
 static int
 dir_remove_file(struct File *dir, struct File *f) {
     char *blk;
@@ -563,6 +568,7 @@ move:
     return 0;
 }
 
+/* Function that removes a file or directory at the specified path. */
 int
 file_remove(const char *path) {
     char *blk;

@@ -351,6 +351,8 @@ serve_read(envid_t envid, union Fsipc *ipc) {
     return count;
 }
 
+/* This function serves an IPC request to remove a file or directory 
+ * from the file system */
 int 
 serve_remove(envid_t envid, union Fsipc *ipc) {
 	struct Fsreq_remove *req = &ipc->remove;
