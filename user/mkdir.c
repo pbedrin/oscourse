@@ -23,8 +23,8 @@ umain(int argc, char **argv) {
 		} else {
 			strcat(cur_path, argv[2]);
 		}
-		beauty_path(new, cur_path);
-		skip_doubledots(tmp, new);
+		format_path(new, cur_path);
+		drop_doubledots(tmp, new);
 		strcpy(cur_path, tmp);
 		int len = strlen(cur_path);
 		for (int i = 1; i < len; i++) {

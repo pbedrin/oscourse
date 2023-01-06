@@ -37,6 +37,7 @@ struct Fd {
     };
 };
 
+/* Information about file */
 struct Stat {
     char st_name[MAXNAMELEN];
     off_t st_size;

@@ -11,8 +11,8 @@ ls(const char *path, const char *prefix) {
     struct Stat st;
     char new[MAXPATHLEN] = {0};
 	char new_prefix[MAXPATHLEN] = {0};
-	beauty_path(new, path);
-	beauty_path(new_prefix, prefix);
+	format_path(new, path);
+	format_path(new_prefix, prefix);
 
     if ((r = stat(new, &st)) < 0)
         printf("stat %s: %i\n", new, r);

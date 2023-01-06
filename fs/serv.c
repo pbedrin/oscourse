@@ -167,7 +167,7 @@ try_link:
         if ((res = link_create(path, &f)) < 0) {
             if (!(req->req_omode & O_EXCL) && res == -E_FILE_EXISTS)
                 goto try_open;
-            if (debug) cprintf("dir_create failed: %i", res);
+            if (debug) cprintf("symlink_create failed: %i", res);
             return res;
         }
     } else {

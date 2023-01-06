@@ -43,30 +43,60 @@ struct Dev devfile = {
         .dev_write = devfile_write,
         .dev_trunc = devfile_trunc};
 
+/* Set 'formatted_path' to formatted path without dots ('/.' situations) */
 int
-skip_dots(char *new, const char *path) {
+drop_dots(char *formatted_path, const char *path) {
     int len = strlen(path);
     for (int i = 0, j = 0; i < len; i++) {
+        /* situation: 'smth/.' and current sym = '/' --> stop formatting */
         if (path[i] == '/' && path[i + 1] == '.' && i == len - 2) {
             return 0;
         }
+        /* situation: 'smth/./' and current sym = '/' --> drop './' */
         if (path[i] == '/' && path[i + 1] == '.' && path[i + 2] == '/') {
-            new[j] = '/';
+            formatted_path[j] = '/';
             j++;
-            i = i + 1;
+            i++;
             continue;
         }
-        new[j] = path[i];
+        formatted_path[j] = path[i];
         j++;
     }
     return 0;
 }
 
+/* Set 'formatted_path' to formatted path (from original 'path'). 
+ * Remove dots and duplicated slashes from original 'path'. */
 int
-skip_doubledots(char *new, const char *path) {
+format_path(char *formatted_path, const char *path) {
+    char tmp[MAXPATHLEN] = {0};
+
+    /* Remove dots from path */
+    drop_dots(tmp, path);
+
+    int len = strlen(tmp);
+    /* Remove duplucated slashes from path */
+    for (int i = 0, j = 0; i < len; i++) {
+        if (tmp[i] == '/') {
+            formatted_path[j] = tmp[i];
+            j++;
+        }
+        while (tmp[i] == '/') {
+            i++;
+        }
+        formatted_path[j] = tmp[i];
+        j++;
+    }
+    return 0;
+}
+
+/* Set 'formatted_path' to formatted path without doubledots ('..' situations) */
+int
+drop_doubledots(char *formatted_path, const char *path) {
+    /* Replace doubledots with # */
     int len = strlen(path);
     char tmp[MAXPATHLEN] = {0};
-    strcpy(tmp, path);
+    strncpy(tmp, path, len);
     int skip = 0;
     for (int i = len - 1; i >= 0; i--) {
         if (tmp[i] == '.' && tmp[i - 1] == '.' && tmp[i - 2] == '/') {
@@ -96,35 +126,19 @@ skip_doubledots(char *new, const char *path) {
             skip--;
         }
     }
+
+    /* Skip # in path */
     for (int i = 0, j = 0; i < len; i++) {
         if (tmp[i] != '#') {
-            new[j] = tmp[i];
+            formatted_path[j] = tmp[i];
             j++;
         }
     }
+
+    /* Format path */
     memset(tmp, 0, MAXPATHLEN);
-    beauty_path(tmp, new);
-    strcpy(new, tmp);
-    return 0;
-}
-
-
-int
-beauty_path(char *new, const char *path) {
-    char tmp[MAXPATHLEN] = {0};
-    skip_dots(tmp, path);
-    int len = strlen(tmp);
-    for (int i = 0, j = 0; i < len; i++) {
-        if (tmp[i] == '/') {
-            new[j] = tmp[i];
-            j++;
-        }
-        while (tmp[i] == '/') {
-            i++;
-        }
-        new[j] = tmp[i];
-        j++;
-    }
+    format_path(tmp, formatted_path);
+    strcpy(formatted_path, tmp);
     return 0;
 }
 
@@ -176,8 +190,8 @@ open(const char *path, int mode) {
 		strcat(cur_path, path);
 	}
 
-	beauty_path(new, cur_path);
-	skip_doubledots(tmp, new);
+	format_path(new, cur_path);
+	drop_doubledots(tmp, new);
 	strcpy(new, tmp);
     strcpy(fsipcbuf.open.req_path, new);
 
@@ -190,21 +204,21 @@ open(const char *path, int mode) {
 
     if (!strcmp(new, "/dev/stdin")) {
 		if (mode & O_SPAWN) {
-			cprintf("Don't try to exec device files.\n");
+			cprintf("You does not have permission to open dev/stdin.\n");
 			return -E_INVAL;
 		}
 		fd_close(fd, 0);
 		return 0;
 	} else if (!strcmp(new, "/dev/stdout")) {
 		if (mode & O_SPAWN) {
-			cprintf("Don't try to exec device files.\n");
+			cprintf("You does not have permission to open dev/stdout.\n");
 			return -E_INVAL;
 		}
 		fd_close(fd, 0);
 		return 1;
 	} else if (!strcmp(new, "/dev/stderr")) {
 		if (mode & O_SPAWN) {
-			cprintf("Don't try to exec device files.\n");
+			cprintf("You does not have permission to open dev/stderr.\n");
 			return -E_INVAL;
 		}
 		fd_close(fd, 0);
@@ -320,19 +334,24 @@ sync(void) {
     return fsipc(FSREQ_SYNC, NULL);
 }
 
+/* Remove file at 'path'. Sends the FSREQ_REMOVE IPC signal
+ * and the 'path' to the file to be deleted.
+ * serv.c/serve_remove receives signal and calls fs.c/file_remove. */
 int
 remove(const char *path) {
     char cur_path[MAXPATHLEN] = {0};
     if (path[0] != '/') {
+        /* If relative path */
         getcwd(cur_path, MAXPATHLEN);
         strcat(cur_path, path);
     } else {
+        /* If absolute path */
         strcat(cur_path, path);
     }
     char new[MAXPATHLEN] = {0};
     char tmp[MAXPATHLEN] = {0};
-    beauty_path(new, cur_path);
-    skip_doubledots(tmp, new);
+    format_path(new, cur_path);
+    drop_doubledots(tmp, new);
     strcpy(fsipcbuf.remove.req_path, tmp);
     int res = fsipc(FSREQ_REMOVE, NULL);
     if (res < 0) {
@@ -341,26 +360,33 @@ remove(const char *path) {
     return 0;
 }
 
+/* Create symlink file at 'symlink_path' for file at 'path' */
 int
 symlink(const char *symlink_path, const char *path) {
     char cur_path[MAXPATHLEN] = {0};
     if (path[0] != '/') {
+        /* If relative path */
         getcwd(cur_path, MAXPATHLEN);
         strcat(cur_path, path);
     } else {
+        /* If absolute path */
         strcat(cur_path, path);
     }
     char symlink_cur_path[MAXPATHLEN] = {0};
     if (symlink_path[0] != '/') {
+        /* If relative path */
         getcwd(symlink_cur_path, MAXPATHLEN);
         strcat(symlink_cur_path, symlink_path);
     } else {
+        /* If absolute path */
         strcat(symlink_cur_path, symlink_path);
     }
+    /* Create symlink file */
     int fd = open(symlink_cur_path, O_MKLINK | O_WRONLY | O_SYSTEM | O_EXCL);
     if (fd < 0) {
         return fd;
     }
+    /* Write 'cur_path' to symlink file */
     int res = write(fd, cur_path, sizeof(cur_path));
     if (res != sizeof(cur_path)) {
         return res;
@@ -369,15 +395,21 @@ symlink(const char *symlink_path, const char *path) {
     return 0;
 }
 
+/* Set 'perm' permission for file at 'path'.
+ * In RWX notation: 'perm' is 0 (000) to 7 (111). */
 int
 chmod(const char *path, int perm) {
 	char cur_path[MAXPATHLEN] = {0};
 	if (path[0] != '/') {
+        /* If relative path */
 		getcwd(cur_path, MAXPATHLEN);
 		strcat(cur_path, path);
 	} else {
+        /* If absolute path */
 		strcat(cur_path, path);
 	}
+    /* file.c/open --> (ipc signal) --> serv.c/serve_open --> fs.c/file_set_perm
+     * So, set permissions 'perm' to file at 'path'. */
 	int res = open(cur_path, O_CHMOD | (perm << 0x4));
 	if (res < 0) {
 		return res;

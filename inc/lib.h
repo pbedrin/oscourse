@@ -144,8 +144,8 @@ int sync(void);
 
 int chmod(const char *path, int perm);
 int symlink(const char *symlink_path, const char *path);
-int beauty_path(char *new, const char *path);
-int skip_doubledots(char *new, const char *path);
+int format_path(char *new, const char *path);
+int drop_doubledots(char *new, const char *path);
 
 /* spawn.c */
 envid_t spawn(const char *program, const char **argv);
