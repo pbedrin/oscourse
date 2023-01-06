@@ -223,8 +223,15 @@ open(const char *path, int mode) {
 		}
 		fd_close(fd, 0);
 		return 2;
-	}
-
+	} else if (!strcmp(new, "/pipe")) {
+		if (mode & O_SPAWN) {
+			cprintf("You does not have permission to open pipe.\n");
+			return -E_INVAL;
+		}
+		fd_close(fd, 0);
+		return 3;
+    }
+    
     return fd2num(fd);
 }
 

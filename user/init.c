@@ -65,6 +65,8 @@ umain(int argc, char **argv) {
         panic("cant make stout\n");
     if ((r = open("/dev/stderr", O_CREAT) < 0))
         panic("cant make stderr\n");
+    if ((r = open("/pipe", O_CREAT) < 0))
+        panic("cant make pipe\n");
 
     while (1) {
         cprintf("init: starting sh\n");
