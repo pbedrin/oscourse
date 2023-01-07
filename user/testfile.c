@@ -178,7 +178,7 @@ umain(int argc, char **argv) {
 
     /* Simple test - change dir. Check pwd. */
     cprintf("change directory check\n");
-    if ((r = chdir(dir, 0)) < 0) {
+    if ((r = chdir(dir)) < 0) {
         cprintf("cd /dir %ld", (long)r);
         return;
     }
@@ -189,7 +189,7 @@ umain(int argc, char **argv) {
         cprintf("fail to get pwd of /dir %ld\n", (long)r);
         return;
     }
-    if ((r = chdir(src, 0)) < 0) {
+    if ((r = chdir(src)) < 0) {
         cprintf("cd / %ld\n", (long)r);
         return;
     }
@@ -348,11 +348,11 @@ umain(int argc, char **argv) {
         cprintf("creat symlink /copy: %ld\n", (long)f);
         return;
     }
-    if ((r = chdir(copy, 0)) < 0) {
+    if ((r = chdir(copy)) < 0) {
         cprintf("cd /dir %ld\n", (long)r);
         return;
     }
-    if ((r = chdir(src, 0)) < 0) {
+    if ((r = chdir(src)) < 0) {
         cprintf("cd / %ld\n", (long)r);
         return;
     }

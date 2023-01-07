@@ -79,7 +79,7 @@ spawn(const char *prog, const char **argv) {
     // TODO Properly load ELF and check errors
 
     if (!strcmp(prog, "/cd") || !strcmp(prog, "cd")) {
-        int res = chdir(argv[1], 0);
+        int res = chdir(argv[1]);
         if (res < 0) {
             return res;
         }

@@ -1,21 +1,24 @@
 #include <inc/string.h>
 #include <inc/lib.h>
 
-/* Set 'buffer' to the current working directory
- * of the calling process (to 'workpath' field from struct Env) */
+/* Set 'buf' to the current working directory
+ * of the calling process (to 'workpath' field from struct Env).
+ * (It's for 'pwd' utility)
+ * (cwd - Current Working Directory) */
 char *
-getcwd(char *buffer, int maxlen) {
-	if (!buffer || maxlen < 0) {
+getcwd(char *buf, int maxlen) {
+	if (!buf || maxlen < 0) {
 		return (char *)thisenv->workpath;
 	}
 	/* strncpy copy 2nd arg to 1st, strncpy returns 1st arg */
-	return strncpy((char *)buffer, (const char *)thisenv->workpath, maxlen);
+	return strncpy((char *)buf, (const char *)thisenv->workpath, maxlen);
 }
 
 /* Сhanges the current working directory of the calling
- * process to the directory specified in 'path'. */
+ * process to the directory specified in 'path'. 
+ * (It's for 'cd' utility) */
 int
-chdir(const char *path, int mode) {
+chdir(const char *path) {
 	/* Forming new path in 'curr_path' */
 	char curr_path[MAXPATHLEN] = {0};
     if (path[0] != '/') {
@@ -28,12 +31,13 @@ chdir(const char *path, int mode) {
 	/* Check 'curr_path' is dir */
 	int fd;
 	if ((fd = open(curr_path, O_RDONLY)) < 0) {
-        printf("Open file. Path: %s, fd: %i\n", curr_path, fd);
+        printf("Error: open file at path: %s, fd: %i\n", curr_path, fd);
         return fd;
 	}
 	struct Stat st;
 	int res = fstat(fd, &st);
 	if (res < 0) {
+		printf("Error: get fstat\n");
 		return res;
 	}
 	close(fd);
@@ -68,8 +72,8 @@ mkdir(const char *dirname) {
 		/* If absolute path */
 		strcat(curr_path, dirname);
 	}
-	int res = open(curr_path, O_MKDIR | O_SYSTEM | O_EXCL);
-	if (res < 0) {
+	int res;
+	if ((res = open(curr_path, O_MKDIR | O_EXCL)) < 0) {
 		return res;
 	}
 	close(res);

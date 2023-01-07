@@ -165,7 +165,7 @@ int pipeisclosed(int pipefd);
 void wait(envid_t env);
 
 /* dir.c */
-int chdir(const char *path, int mode);
+int chdir(const char *path);
 char *getcwd(char *buffer, int maxlen);
 int mkdir(const char *dirname);
 

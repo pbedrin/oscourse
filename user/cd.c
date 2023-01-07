@@ -6,8 +6,8 @@ umain(int argc, char **argv) {
         printf("Usage: cd [directory name]\n");
         return;
     }
-	int res = chdir(argv[1], 0);
+	int res = chdir(argv[1]);
 	if (res < 0) {
-		printf("Error on chdir %s: %d\n", argv[0], res);
+		printf("Error on chdir %s: %d\n", argv[1], res);
 	}
 }
