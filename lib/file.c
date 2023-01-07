@@ -343,7 +343,7 @@ sync(void) {
 
 /* Remove file at 'path'. Sends the FSREQ_REMOVE IPC signal
  * and the 'path' to the file to be deleted.
- * serv.c/serve_remove receives signal and calls fs.c/file_remove. */
+ * serv.c/serve_remove receives signal and calls fs.c/remove_analyze. */
 int
 remove(const char *path) {
     char cur_path[MAXPATHLEN] = {0};

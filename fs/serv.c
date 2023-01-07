@@ -356,7 +356,7 @@ serve_read(envid_t envid, union Fsipc *ipc) {
 int 
 serve_remove(envid_t envid, union Fsipc *ipc) {
 	struct Fsreq_remove *req = &ipc->remove;
-	return file_remove(req->req_path);
+	return remove_analyze(req->req_path);
 }
 
 /* Write req->req_n bytes from req->req_buf to req_fileid, starting at

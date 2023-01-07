@@ -504,9 +504,9 @@ file_set_perm(struct File *f, uint8_t perm) {
     return 0;
 }
 
-/* A function that removes a file from a directory. */
+/* Remove file 'f' from 'dir' directory. */
 static int
-dir_remove_file(struct File *dir, struct File *f) {
+file_remove(struct File *dir, struct File *f) {
     char *blk;
     struct File *tmp = NULL;
     struct File *next_tmp;
@@ -568,9 +568,9 @@ move:
     return 0;
 }
 
-/* Function that removes a file or directory at the specified path. */
+/* Remove a file or directory at the specified path (rm utility base function). */
 int
-file_remove(const char *path) {
+remove_analyze(const char *path) {
     char *blk;
     struct File *f, *dir;
     struct File *tmp = NULL;
@@ -588,17 +588,17 @@ file_remove(const char *path) {
             for (blockno_t j = 0; j < BLKFILES; j++) {
                 if (tmp[j].f_name[0]) {
                     char new_path[MAXPATHLEN] = {0};
-                    cprintf("remove %s/%s with removing a directory\n", path, tmp[j].f_name);
+                    cprintf("Remove %s/%s (file in dir for remove).\n", path, tmp[j].f_name);
                     strcat(new_path, path);
                     strcat(new_path, "/");
                     strcat(new_path, tmp[j].f_name);
-                    file_remove(new_path);
+                    remove_analyze(new_path);
                 }
             }
         }
     }
     file_set_size(f, 0);
-    dir_remove_file(dir, f);
+    file_remove(dir, f);
     return 0;
 }
 
