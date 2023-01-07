@@ -13,9 +13,9 @@ umain(int argc, char **argv) {
         getcwd(path, MAXPATHLEN);
     }
     strcat(path, filename);
-    int res = open(path, O_CREAT);
+    int res = open(path, O_CREAT | O_EXCL);
     if (res < 0) {
-        printf("error on creation file with %s: %d\n", argv[0], res);
+        printf("Error on creation file with %s: %d\n", argv[0], res);
     }
     close(res);
 }

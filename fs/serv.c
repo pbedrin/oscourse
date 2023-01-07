@@ -238,6 +238,8 @@ try_link:
 			return -E_INVAL;
 		}
 	}
+
+    /* CHMOD: set file permissions */
 	if (req->req_omode & O_CHMOD) {
         if ((res = file_set_perm(f, (req->req_omode & 0x70) >> 0x4)) < 0) {
             if (debug) cprintf("file_set_perm failed: %i", res);

@@ -9,7 +9,7 @@ umain(int argc, char **argv) {
     if (argc == 2) {
 		int res = mkdir((const char *)argv[1]);
 		if (res < 0) {
-			printf("error on creation dir with %s: %d\n", argv[0], res);
+			printf("Error on creation dir with %s: %d\n", argv[0], res);
 		}
 		return;
 	}
